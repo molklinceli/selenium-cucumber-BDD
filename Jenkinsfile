@@ -1,49 +1,45 @@
 pipeline {
-  agent any
+    agent any
 
-  tools {
-    jdk   'JAVA_HOME'
-    maven 'MAVEN_HOME'
-  }
-
-  options {
-    timestamps()
-    disableConcurrentBuilds()
-  }
-
-  stages {
-    stage('Checkout') {
-      steps {
-        checkout scm
-      }
+    tools {
+        jdk 'JAVA_HOME'      // Nom exact de ta JDK dans Jenkins
+        maven 'MAVEN_HOME'   // Nom exact de ton Maven dans Jenkins
     }
 
-    stage('Build & Test') {
-      steps {
-        bat 'java -version'
-        bat 'mvn -version'
-        bat 'mvn -U -e clean test'
-      }
+    options {
+        timestamps()
+        disableConcurrentBuilds()
     }
-  }
 
-  post {
-    always {
-      // Résultats JUnit (Surefire)
-      junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
 
-      // Rapport Cucumber HTML (si généré)
-      publishHTML(target: [
-         reportDir: 'target/report',
-         reportFiles: 'cucumber-report.html',
-         reportName: 'Cucumber Report',
-         keepAll: true,
-         alwaysLinkToLastBuild: true,
-         allowMissing: false
-      ])
+        stage('Build & Test') {
+            steps {
+                // Vérification des versions
+                bat 'java -version'
+                bat 'mvn -version'
 
-      // Archive (rapports + screenshots/logs si tu en génères)
-      archiveArtifacts artifacts: 'target/**, screenshots/**, logs/**', allowEmptyArchive: true
+                // Lancer les tests avec Maven
+                // "verify" exécute test + génération du rapport HTML via maven-cucumber-reporting
+                bat 'mvn clean verify'
+            }
+        }
     }
-  }
-} 
+
+    post {
+        always {
+            // Résultats JUnit (Surefire)
+            junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
+
+            // Rapport Cucumber HTML généré par Maven Cucumber Reporting
+            publishHTML(target: [
+                reportDir: 'target/report',
+                reportFiles: 'cucumber-report.html',
+                reportName: 'Cucumber Report',
+                keepAll: true,
+                alwaysLinkToLast
