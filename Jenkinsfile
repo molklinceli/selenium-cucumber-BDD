@@ -2,16 +2,12 @@ pipeline {
     agent any
 
     tools {
-        jdk 'JAVA_HOME'      // Nom exact de ta JDK dans Jenkins
-        maven 'MAVEN_HOME'   // Nom exact de ton Maven dans Jenkins
-    }
-
-    options {
-        timestamps()
-        disableConcurrentBuilds()
+        jdk 'JAVA_HOME'
+        maven 'MAVEN_HOME'
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -20,12 +16,8 @@ pipeline {
 
         stage('Build & Test') {
             steps {
-                // Vérification des versions
                 bat 'java -version'
                 bat 'mvn -version'
-
-                // Lancer les tests avec Maven
-                // "verify" exécute test + génération du rapport HTML via maven-cucumber-reporting
                 bat 'mvn clean verify'
             }
         }
@@ -33,13 +25,18 @@ pipeline {
 
     post {
         always {
-            // Résultats JUnit (Surefire)
-            junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
 
-            // Rapport Cucumber HTML généré par Maven Cucumber Reporting
+            // DEBUG : voir les fichiers générés
+            bat 'dir target\\report'
+
+            // Publication HTML
             publishHTML(target: [
                 reportDir: 'target/report',
                 reportFiles: 'cucumber-report.html',
                 reportName: 'Cucumber Report',
                 keepAll: true,
-                alwaysLinkToLast
+                alwaysLinkToLast: true
+            ])
+        }
+    }
+}
